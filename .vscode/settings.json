@@ -1,0 +1,12 @@
+{
+    "cmake.configureOnOpen": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.associations": {
+        "qmainwindow": "cpp",
+        "qlineedit": "cpp",
+        "qpushbutton": "cpp",
+        "qtextedit": "cpp",
+        "qcheckbox": "cpp",
+        "qprocess": "cpp"
+    }
+}
