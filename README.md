@@ -1,7 +1,7 @@
 # FFmpeg Video Comparison Tool
 
 A GUI application for comparing two video files using FFmpeg's SSIM (Structural Similarity Index) filter.
-
+![alt text](Screenshot.png)
 ## Features
 
 - **File Selection**: Browse and select original and comparison media files through intuitive file dialogs
