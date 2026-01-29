@@ -57,6 +57,15 @@ private:
     QLabel *resultVLabel;
     QLabel *resultAllLabel;
     
+    // PSNR results
+    QLabel *psnrYLabel;
+    QLabel *psnrULabel;
+    QLabel *psnrVLabel;
+    QLabel *psnrAvgLabel;
+    
+    // VMAF results
+    QLabel *vmafScoreLabel;
+    
     QTextEdit *outputText;
     
     QProcess *ffmpegProcess;

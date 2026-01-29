@@ -11,8 +11,8 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ffmpegProcess(nullptr) {
     setupUI();
-    setWindowTitle("FFmpeg Video Comparison Tool (SSIM)");
-    resize(900, 750);  // Taller window for better layout
+    setWindowTitle("FFmpeg Video Comparison Tool (SSIM + PSNR + VMAF)");
+    resize(950, 850);  // Larger window for additional metrics
 }
 
 MainWindow::~MainWindow() {
@@ -105,49 +105,93 @@ void MainWindow::setupUI() {
     mainLayout->addWidget(progressBar);
     
     // Results Group
-    resultsGroup = new QGroupBox("SSIM Comparison Results", this);
+    resultsGroup = new QGroupBox("Comprehensive Quality Analysis Results", this);
     resultsGroup->setVisible(false);
     QVBoxLayout *resultsLayout = new QVBoxLayout(resultsGroup);
     
-    // Info label
-    QLabel *infoLabel = new QLabel(
-        "<b>SSIM (Structural Similarity Index):</b> Measures video quality similarity (0-1 scale, 1 = identical)<br>"
-        "<b>Y (Luminance):</b> Brightness similarity | "
-        "<b>U/V (Chrominance):</b> Color similarity | "
-        "<b>All:</b> Overall quality",
-        this);
-    infoLabel->setWordWrap(true);
-    infoLabel->setStyleSheet("QLabel { color: #555; font-size: 9pt; padding: 5px; background-color: #f0f0f0; border-radius: 3px; }");
-    resultsLayout->addWidget(infoLabel);
+    // SSIM Section
+    QLabel *ssimHeader = new QLabel("<b>SSIM (Structural Similarity Index)</b> - Perceptual similarity (0-1 scale, 1 = identical)", this);
+    ssimHeader->setStyleSheet("QLabel { color: #555; font-size: 9pt; padding: 5px; background-color: #e3f2fd; border-radius: 3px; margin-top: 5px; }");
+    resultsLayout->addWidget(ssimHeader);
     
-    // Results display
-    QHBoxLayout *scoresLayout = new QHBoxLayout();
+    // SSIM Results display
+    QHBoxLayout *ssimLayout = new QHBoxLayout();
     
     resultYLabel = new QLabel("Y: --", this);
-    resultYLabel->setStyleSheet("QLabel { font-size: 14pt; font-weight: bold; padding: 10px; background-color: #e3f2fd; border-radius: 5px; }");
+    resultYLabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; background-color: #e3f2fd; border-radius: 5px; }");
     resultYLabel->setAlignment(Qt::AlignCenter);
     resultYLabel->setToolTip("Luminance (Brightness) Similarity");
-    scoresLayout->addWidget(resultYLabel);
+    ssimLayout->addWidget(resultYLabel);
     
     resultULabel = new QLabel("U: --", this);
-    resultULabel->setStyleSheet("QLabel { font-size: 14pt; font-weight: bold; padding: 10px; background-color: #e8f5e9; border-radius: 5px; }");
+    resultULabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; background-color: #e3f2fd; border-radius: 5px; }");
     resultULabel->setAlignment(Qt::AlignCenter);
     resultULabel->setToolTip("U Chrominance (Color) Similarity");
-    scoresLayout->addWidget(resultULabel);
+    ssimLayout->addWidget(resultULabel);
     
     resultVLabel = new QLabel("V: --", this);
-    resultVLabel->setStyleSheet("QLabel { font-size: 14pt; font-weight: bold; padding: 10px; background-color: #fff3e0; border-radius: 5px; }");
+    resultVLabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; background-color: #e3f2fd; border-radius: 5px; }");
     resultVLabel->setAlignment(Qt::AlignCenter);
     resultVLabel->setToolTip("V Chrominance (Color) Similarity");
-    scoresLayout->addWidget(resultVLabel);
+    ssimLayout->addWidget(resultVLabel);
     
     resultAllLabel = new QLabel("Overall: --", this);
-    resultAllLabel->setStyleSheet("QLabel { font-size: 16pt; font-weight: bold; padding: 10px; background-color: #f3e5f5; border-radius: 5px; }");
+    resultAllLabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; background-color: #bbdefb; border-radius: 5px; }");
     resultAllLabel->setAlignment(Qt::AlignCenter);
-    resultAllLabel->setToolTip("Overall Quality Score");
-    scoresLayout->addWidget(resultAllLabel);
+    resultAllLabel->setToolTip("Overall SSIM Score");
+    ssimLayout->addWidget(resultAllLabel);
     
-    resultsLayout->addLayout(scoresLayout);
+    resultsLayout->addLayout(ssimLayout);
+    
+    // PSNR Section
+    QLabel *psnrHeader = new QLabel("<b>PSNR (Peak Signal-to-Noise Ratio)</b> - Quality in dB (higher is better, >40dB = excellent)", this);
+    psnrHeader->setStyleSheet("QLabel { color: #555; font-size: 9pt; padding: 5px; background-color: #e8f5e9; border-radius: 3px; margin-top: 10px; }");
+    resultsLayout->addWidget(psnrHeader);
+    
+    // PSNR Results display
+    QHBoxLayout *psnrLayout = new QHBoxLayout();
+    
+    psnrYLabel = new QLabel("Y: --", this);
+    psnrYLabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; background-color: #e8f5e9; border-radius: 5px; }");
+    psnrYLabel->setAlignment(Qt::AlignCenter);
+    psnrYLabel->setToolTip("Luminance PSNR");
+    psnrLayout->addWidget(psnrYLabel);
+    
+    psnrULabel = new QLabel("U: --", this);
+    psnrULabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; background-color: #e8f5e9; border-radius: 5px; }");
+    psnrULabel->setAlignment(Qt::AlignCenter);
+    psnrULabel->setToolTip("U Chrominance PSNR");
+    psnrLayout->addWidget(psnrULabel);
+    
+    psnrVLabel = new QLabel("V: --", this);
+    psnrVLabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; background-color: #e8f5e9; border-radius: 5px; }");
+    psnrVLabel->setAlignment(Qt::AlignCenter);
+    psnrVLabel->setToolTip("V Chrominance PSNR");
+    psnrLayout->addWidget(psnrVLabel);
+    
+    psnrAvgLabel = new QLabel("Average: --", this);
+    psnrAvgLabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; background-color: #c8e6c9; border-radius: 5px; }");
+    psnrAvgLabel->setAlignment(Qt::AlignCenter);
+    psnrAvgLabel->setToolTip("Average PSNR");
+    psnrLayout->addWidget(psnrAvgLabel);
+    
+    resultsLayout->addLayout(psnrLayout);
+    
+    // VMAF Section
+    QLabel *vmafHeader = new QLabel("<b>VMAF (Video Multimethod Assessment Fusion)</b> - Netflix quality metric (0-100 scale, >95 = excellent)", this);
+    vmafHeader->setStyleSheet("QLabel { color: #555; font-size: 9pt; padding: 5px; background-color: #fff3e0; border-radius: 3px; margin-top: 10px; }");
+    resultsLayout->addWidget(vmafHeader);
+    
+    // VMAF Results display
+    QHBoxLayout *vmafLayout = new QHBoxLayout();
+    
+    vmafScoreLabel = new QLabel("VMAF Score: --", this);
+    vmafScoreLabel->setStyleSheet("QLabel { font-size: 14pt; font-weight: bold; padding: 12px; background-color: #ffe0b2; border-radius: 5px; }");
+    vmafScoreLabel->setAlignment(Qt::AlignCenter);
+    vmafScoreLabel->setToolTip("Overall VMAF Quality Score");
+    vmafLayout->addWidget(vmafScoreLabel);
+    
+    resultsLayout->addLayout(vmafLayout);
     mainLayout->addWidget(resultsGroup);
     
     // Add spacing
@@ -286,8 +330,16 @@ void MainWindow::runComparison() {
     // Second input file
     arguments << "-i" << comparisonFileEdit->text();
     
-    // SSIM filter and output
-    arguments << "-lavfi" << "ssim" << "-f" << "null" << "-";
+    // Complex filter with SSIM, PSNR, and VMAF
+    QString filterComplex = "[0:v]split=3[ref1][ref2][ref3];[1:v]split=3[main1][main2][main3];"
+                            "[main1][ref1]ssim[stats_ssim];"
+                            "[main2][ref2]psnr[stats_psnr];"
+                            "[main3][ref3]libvmaf";
+    
+    arguments << "-filter_complex" << filterComplex
+              << "-map" << "[stats_ssim]"
+              << "-map" << "[stats_psnr]"
+              << "-f" << "null" << "-";
     
     // Display command
     outputText->clear();
@@ -391,8 +443,8 @@ void MainWindow::processError() {
             QString allDbStr = ssimMatch.captured(8);
             
             // Update result labels with color coding
-            auto getColorStyle = [](double score) {
-                QString baseStyle = "QLabel { font-size: 14pt; font-weight: bold; padding: 10px; border-radius: 5px; ";
+            auto getSSIMColorStyle = [](double score) {
+                QString baseStyle = "QLabel { font-size: 12pt; font-weight: bold; padding: 8px; border-radius: 5px; ";
                 if (score >= 0.99) return baseStyle + "background-color: #4caf50; color: white; }"; // Excellent - green
                 if (score >= 0.95) return baseStyle + "background-color: #8bc34a; color: white; }"; // Very good - light green
                 if (score >= 0.90) return baseStyle + "background-color: #ffeb3b; color: black; }"; // Good - yellow
@@ -401,23 +453,74 @@ void MainWindow::processError() {
             };
             
             resultYLabel->setText(QString("Y: %1\n(%2)").arg(yScore, 0, 'f', 4).arg(yDbStr == "inf" ? "∞ dB" : yDbStr + " dB"));
-            resultYLabel->setStyleSheet(getColorStyle(yScore));
+            resultYLabel->setStyleSheet(getSSIMColorStyle(yScore));
             
             resultULabel->setText(QString("U: %1\n(%2)").arg(uScore, 0, 'f', 4).arg(uDbStr == "inf" ? "∞ dB" : uDbStr + " dB"));
-            resultULabel->setStyleSheet(getColorStyle(uScore));
+            resultULabel->setStyleSheet(getSSIMColorStyle(uScore));
             
             resultVLabel->setText(QString("V: %1\n(%2)").arg(vScore, 0, 'f', 4).arg(vDbStr == "inf" ? "∞ dB" : vDbStr + " dB"));
-            resultVLabel->setStyleSheet(getColorStyle(vScore));
-            
-            QString overallStyle = "QLabel { font-size: 16pt; font-weight: bold; padding: 10px; border-radius: 5px; ";
-            if (allScore >= 0.99) overallStyle += "background-color: #4caf50; color: white; }";
-            else if (allScore >= 0.95) overallStyle += "background-color: #8bc34a; color: white; }";
-            else if (allScore >= 0.90) overallStyle += "background-color: #ffeb3b; color: black; }";
-            else if (allScore >= 0.80) overallStyle += "background-color: #ff9800; color: white; }";
-            else overallStyle += "background-color: #f44336; color: white; }";
+            resultVLabel->setStyleSheet(getSSIMColorStyle(vScore));
             
             resultAllLabel->setText(QString("Overall: %1\n(%2)").arg(allScore, 0, 'f', 4).arg(allDbStr == "inf" ? "∞ dB" : allDbStr + " dB"));
-            resultAllLabel->setStyleSheet(overallStyle);
+            resultAllLabel->setStyleSheet(getSSIMColorStyle(allScore));
+            
+            resultsGroup->setVisible(true);
+        }
+        
+        // Parse PSNR results
+        QRegularExpression psnrRegex("PSNR.*?y:([\\d.]+|inf).*?u:([\\d.]+|inf).*?v:([\\d.]+|inf).*?average:([\\d.]+|inf)");
+        QRegularExpressionMatch psnrMatch = psnrRegex.match(error);
+        if (psnrMatch.hasMatch()) {
+            QString yDb = psnrMatch.captured(1);
+            QString uDb = psnrMatch.captured(2);
+            QString vDb = psnrMatch.captured(3);
+            QString avgDb = psnrMatch.captured(4);
+            
+            // Update PSNR labels with color coding
+            auto getPSNRColorStyle = [](const QString& dbStr) {
+                if (dbStr == "inf") {
+                    return QString("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; border-radius: 5px; background-color: #4caf50; color: white; }");
+                }
+                double db = dbStr.toDouble();
+                QString baseStyle = "QLabel { font-size: 12pt; font-weight: bold; padding: 8px; border-radius: 5px; ";
+                if (db >= 40.0) return baseStyle + "background-color: #4caf50; color: white; }"; // Excellent
+                if (db >= 35.0) return baseStyle + "background-color: #8bc34a; color: white; }"; // Very good
+                if (db >= 30.0) return baseStyle + "background-color: #ffeb3b; color: black; }"; // Good
+                if (db >= 25.0) return baseStyle + "background-color: #ff9800; color: white; }"; // Fair
+                return baseStyle + "background-color: #f44336; color: white; }"; // Poor
+            };
+            
+            psnrYLabel->setText(QString("Y: %1 dB").arg(yDb == "inf" ? "∞" : yDb));
+            psnrYLabel->setStyleSheet(getPSNRColorStyle(yDb));
+            
+            psnrULabel->setText(QString("U: %1 dB").arg(uDb == "inf" ? "∞" : uDb));
+            psnrULabel->setStyleSheet(getPSNRColorStyle(uDb));
+            
+            psnrVLabel->setText(QString("V: %1 dB").arg(vDb == "inf" ? "∞" : vDb));
+            psnrVLabel->setStyleSheet(getPSNRColorStyle(vDb));
+            
+            psnrAvgLabel->setText(QString("Avg: %1 dB").arg(avgDb == "inf" ? "∞" : avgDb));
+            psnrAvgLabel->setStyleSheet(getPSNRColorStyle(avgDb));
+            
+            resultsGroup->setVisible(true);
+        }
+        
+        // Parse VMAF results
+        QRegularExpression vmafRegex("VMAF score[:\\s=]+([\\d.]+)");
+        QRegularExpressionMatch vmafMatch = vmafRegex.match(error);
+        if (vmafMatch.hasMatch()) {
+            double vmafScore = vmafMatch.captured(1).toDouble();
+            
+            // Update VMAF label with color coding
+            QString vmafStyle = "QLabel { font-size: 14pt; font-weight: bold; padding: 12px; border-radius: 5px; ";
+            if (vmafScore >= 95.0) vmafStyle += "background-color: #4caf50; color: white; }"; // Excellent
+            else if (vmafScore >= 85.0) vmafStyle += "background-color: #8bc34a; color: white; }"; // Very good
+            else if (vmafScore >= 75.0) vmafStyle += "background-color: #ffeb3b; color: black; }"; // Good
+            else if (vmafScore >= 60.0) vmafStyle += "background-color: #ff9800; color: white; }"; // Fair
+            else vmafStyle += "background-color: #f44336; color: white; }"; // Poor
+            
+            vmafScoreLabel->setText(QString("VMAF: %1").arg(vmafScore, 0, 'f', 2));
+            vmafScoreLabel->setStyleSheet(vmafStyle);
             
             resultsGroup->setVisible(true);
         }
