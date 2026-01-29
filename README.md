@@ -1,23 +1,25 @@
 # FFmpeg Video Comparison Tool
 
-A GUI application for comparing two video files using FFmpeg's SSIM (Structural Similarity Index) filter.
+A GUI application for comprehensive video quality comparison using FFmpeg's SSIM, PSNR, and VMAF metrics.
 
-<img width="902" height="781" alt="Screenshot" src="https://github.com/user-attachments/assets/a74617ad-16e0-4433-b05c-483731e802e1" />
+<img width="902" height="781" alt="Screenshot" src="resources/screenshot.png" />
 
 ## Features
 
 - **File Selection**: Browse and select original and comparison media files through intuitive file dialogs
+  - **Automatic File Validation**: Ensures only valid video files are selected (MP4, AVI, MKV, MOV, WMV, FLV, etc.)
+  - **Resolution Display**: Shows video resolution (e.g., 1920x1080) next to each selected file
 - **Flexible Time Control**: 
   - Optional start time specification (defaults to beginning)
   - Optional duration specification (defaults to entire file)
 - **Real-time Progress Tracking**: Live progress bar showing encoding progress and time remaining
-- **Visual Results Display**: Color-coded SSIM results with easy-to-read scores:
-  - Y (Luminance) similarity score
-  - U/V (Chrominance) color similarity scores
-  - Overall quality score with dB values
-  - Color-coded display (green = excellent, yellow = good, orange = fair, red = poor)
+- **Comprehensive Quality Analysis**: Three industry-standard metrics displayed simultaneously:
+  - **SSIM (Structural Similarity Index)**: Perceptual similarity measurement (0-1 scale)
+  - **PSNR (Peak Signal-to-Noise Ratio)**: Quality measurement in dB (higher is better)
+  - **VMAF (Video Multimethod Assessment Fusion)**: Netflix's perceptual quality metric (0-100 scale)
+- **Color-Coded Results**: Visual quality indicators (green = excellent, yellow = good, orange = fair, red = poor)
 - **Detailed Output Log**: Complete FFmpeg output for debugging and verification
-- **Wide Format Support**: MP4, AVI, MKV, MOV, WMV, FLV, and more
+- **Wide Format Support**: MP4, AVI, MKV, MOV, WMV, FLV, WebM, and more
 - **Professional UI**: Modern Qt6-based interface with organized layout
 
 ## Prerequisites
@@ -142,6 +144,8 @@ The ZIP file contains:
 2. **Select files:**
    - Click "Browse..." next to "Original Media" to select your reference video
    - Click "Browse..." next to "Comparison Media" to select the video to compare
+   - The video resolution (e.g., 1920x1080) will automatically display next to each file
+   - Only valid video formats will be accepted (MP4, AVI, MKV, MOV, WMV, FLV, WebM, etc.)
 
 3. **Configure time options (optional):**
    - Check "Start Time" and enter a timestamp (HH:MM:SS) to begin comparison at a specific point
@@ -150,28 +154,53 @@ The ZIP file contains:
 
 4. **Run comparison:**
    - Click "Run Comparison" button
-   - View real-time output in the text area below
-   - SSIM results will be displayed in the output
+   - View real-time progress and output in the log area
+   - Quality metrics (SSIM, PSNR, and VMAF) will be displayed with color-coded results
+   - All three metrics provide complementary perspectives on video quality
 
-## Understanding SSIM Results
+## Understanding Quality Metrics
 
-The application displays SSIM (Structural Similarity Index) scores in a color-coded visual format:
+The application displays three complementary quality metrics in a color-coded visual format:
 
-### Score Interpretation
+### SSIM (Structural Similarity Index)
+Measures perceptual similarity by comparing structure, luminance, and contrast.
+
+**Component Scores:**
 - **Y (Luminance)**: Measures brightness similarity between videos
 - **U/V (Chrominance)**: Measures color similarity
-- **Overall**: Combined quality score
+- **Overall**: Combined SSIM score
 
-### Quality Scale (0-1 range)
+**Quality Scale (0-1 range):**
 - **0.99-1.00**: Excellent (green) - Nearly identical, visually lossless
 - **0.95-0.99**: Very Good (light green) - High quality, minimal differences
 - **0.90-0.95**: Good (yellow) - Noticeable but acceptable quality
 - **0.80-0.90**: Fair (orange) - Visible quality differences
 - **Below 0.80**: Poor (red) - Significant quality loss
 
-### dB Values
-- Higher dB values indicate better quality
-- ∞ dB (infinity) = perfect match (identical frames)
+### PSNR (Peak Signal-to-Noise Ratio)
+Measures quality in decibels (dB) - a traditional objective quality metric.
+
+**Component Scores:**
+- **Y, U, V**: Individual channel measurements
+- **Average**: Overall PSNR score
+
+**Quality Scale (dB):**
+- **>40 dB**: Excellent (green) - Very high quality
+- **35-40 dB**: Very Good (light green) - High quality
+- **30-35 dB**: Good (yellow) - Acceptable quality
+- **25-30 dB**: Fair (orange) - Noticeable quality loss
+- **<25 dB**: Poor (red) - Significant quality degradation
+- **∞ dB**: Perfect match (identical frames)
+
+### VMAF (Video Multimethod Assessment Fusion)
+Developed by Netflix, combines multiple quality metrics to predict human perception.
+
+**Quality Scale (0-100):**
+- **95-100**: Excellent (green) - Transparent quality, indistinguishable from original
+- **85-95**: Very Good (light green) - Very high quality, minimal artifacts
+- **75-85**: Good (yellow) - Good quality, some artifacts may be visible
+- **60-75**: Fair (orange) - Acceptable quality, artifacts visible
+- **<60**: Poor (red) - Poor quality, significant artifacts
 
 ## Screenshots
 
@@ -181,10 +210,15 @@ The application displays SSIM (Structural Similarity Index) scores in a color-co
 
 ### FFmpeg Command Generation
 
-The tool generates commands similar to:
+The tool generates comprehensive comparison commands using filter_complex:
 ```bash
-ffmpeg -ss 00:08:00 -t 00:03:00 -i "original.mp4" -ss 00:08:00 -t 00:03:00 -i "comparison.mp4" -lavfi "ssim" -f null -
+ffmpeg -ss 00:08:00 -t 00:03:00 -i "original.mp4" \
+       -ss 00:08:00 -t 00:03:00 -i "comparison.mp4" \
+       -filter_complex "[0:v]split=3[ref1][ref2][ref3];[1:v]split=3[main1][main2][main3];[main1][ref1]ssim[stats_ssim];[main2][ref2]psnr[stats_psnr];[main3][ref3]libvmaf" \
+       -map "[stats_ssim]" -map "[stats_psnr]" -f null -
 ```
+
+**Note**: VMAF support requires FFmpeg to be compiled with libvmaf. If VMAF is not available, the tool will still display SSIM and PSNR results.
 
 ### Architecture
 - **Framework**: Qt6 with C++17
@@ -207,6 +241,12 @@ ffmpeg -ss 00:08:00 -t 00:03:00 -i "original.mp4" -ss 00:08:00 -t 00:03:00 -i "c
 - Check that all Qt DLLs are accessible (Windows)
 - On Linux, verify Qt libraries are in LD_LIBRARY_PATH
 - On macOS, use `otool -L` to check library dependencies
+
+### VMAF results not showing
+- VMAF requires FFmpeg to be compiled with libvmaf support
+- Test by running `ffmpeg -filters | grep vmaf` to check if vmaf is available
+- SSIM and PSNR will still work even without VMAF support
+- To install FFmpeg with VMAF on Windows, use builds from https://github.com/BtbN/FFmpeg-Builds
 
 ## License
 
