@@ -7,6 +7,7 @@
 #include <QGroupBox>
 #include <QRegularExpression>
 #include <QScrollBar>
+#include <QFileInfo>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ffmpegProcess(nullptr) {
     setupUI();
@@ -37,8 +38,12 @@ void MainWindow::setupUI() {
     originalFileEdit = new QLineEdit(this);
     originalFileEdit->setReadOnly(true);
     originalFileBtn = new QPushButton("Browse...", this);
+    originalResolutionLabel = new QLabel("", this);
+    originalResolutionLabel->setStyleSheet("QLabel { color: #0066cc; font-weight: bold; }");
+    originalResolutionLabel->setMinimumWidth(100);
     originalLayout->addWidget(originalLabel);
     originalLayout->addWidget(originalFileEdit);
+    originalLayout->addWidget(originalResolutionLabel);
     originalLayout->addWidget(originalFileBtn);
     fileLayout->addLayout(originalLayout);
     
@@ -49,8 +54,12 @@ void MainWindow::setupUI() {
     comparisonFileEdit = new QLineEdit(this);
     comparisonFileEdit->setReadOnly(true);
     comparisonFileBtn = new QPushButton("Browse...", this);
+    comparisonResolutionLabel = new QLabel("", this);
+    comparisonResolutionLabel->setStyleSheet("QLabel { color: #0066cc; font-weight: bold; }");
+    comparisonResolutionLabel->setMinimumWidth(100);
     comparisonLayout->addWidget(comparisonLabel);
     comparisonLayout->addWidget(comparisonFileEdit);
+    comparisonLayout->addWidget(comparisonResolutionLabel);
     comparisonLayout->addWidget(comparisonFileBtn);
     fileLayout->addLayout(comparisonLayout);
     
@@ -171,7 +180,21 @@ void MainWindow::selectOriginalFile() {
         "Video Files (*.mp4 *.avi *.mkv *.mov *.wmv *.flv);;All Files (*.*)");
     
     if (!fileName.isEmpty()) {
+        if (!isValidVideoFile(fileName)) {
+            QMessageBox::warning(this, "Invalid File", 
+                "Please select a valid video file (MP4, AVI, MKV, MOV, WMV, or FLV).");
+            return;
+        }
+        
         originalFileEdit->setText(fileName);
+        
+        // Get and display resolution
+        QString resolution = getVideoResolution(fileName);
+        if (!resolution.isEmpty()) {
+            originalResolutionLabel->setText(resolution);
+        } else {
+            originalResolutionLabel->setText("(unknown)");
+        }
     }
 }
 
@@ -182,7 +205,21 @@ void MainWindow::selectComparisonFile() {
         "Video Files (*.mp4 *.avi *.mkv *.mov *.wmv *.flv);;All Files (*.*)");
     
     if (!fileName.isEmpty()) {
+        if (!isValidVideoFile(fileName)) {
+            QMessageBox::warning(this, "Invalid File", 
+                "Please select a valid video file (MP4, AVI, MKV, MOV, WMV, or FLV).");
+            return;
+        }
+        
         comparisonFileEdit->setText(fileName);
+        
+        // Get and display resolution
+        QString resolution = getVideoResolution(fileName);
+        if (!resolution.isEmpty()) {
+            comparisonResolutionLabel->setText(resolution);
+        } else {
+            comparisonResolutionLabel->setText("(unknown)");
+        }
     }
 }
 
@@ -406,4 +443,45 @@ void MainWindow::processFinished(int exitCode, QProcess::ExitStatus exitStatus) 
     
     // Scroll to bottom
     outputText->verticalScrollBar()->setValue(outputText->verticalScrollBar()->maximum());
+}
+
+bool MainWindow::isValidVideoFile(const QString& filePath) {
+    // Check file extension
+    QStringList validExtensions = {"mp4", "avi", "mkv", "mov", "wmv", "flv", "webm", "mpg", "mpeg", "m4v"};
+    QFileInfo fileInfo(filePath);
+    QString extension = fileInfo.suffix().toLower();
+    
+    return validExtensions.contains(extension);
+}
+
+QString MainWindow::getVideoResolution(const QString& filePath) {
+    // Use ffprobe to get video resolution
+    QProcess process;
+    QStringList arguments;
+    
+    arguments << "-v" << "error"
+              << "-select_streams" << "v:0"
+              << "-show_entries" << "stream=width,height"
+              << "-of" << "csv=s=x:p=0"
+              << filePath;
+    
+    process.start("ffprobe", arguments);
+    
+    if (!process.waitForStarted(3000)) {
+        return "";
+    }
+    
+    if (!process.waitForFinished(5000)) {
+        process.kill();
+        return "";
+    }
+    
+    QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
+    
+    // Output should be in format "1920x1080"
+    if (!output.isEmpty() && output.contains("x")) {
+        return output;
+    }
+    
+    return "";
 }

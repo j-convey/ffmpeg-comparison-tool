@@ -30,12 +30,16 @@ private:
     void setupUI();
     QString formatTime(const QString& time);
     bool validateInputs();
+    bool isValidVideoFile(const QString& filePath);
+    QString getVideoResolution(const QString& filePath);
 
     // UI Components
     QLineEdit *originalFileEdit;
     QLineEdit *comparisonFileEdit;
     QPushButton *originalFileBtn;
     QPushButton *comparisonFileBtn;
+    QLabel *originalResolutionLabel;
+    QLabel *comparisonResolutionLabel;
     
     QCheckBox *useStartTimeCheckbox;
     QLineEdit *startTimeEdit;
