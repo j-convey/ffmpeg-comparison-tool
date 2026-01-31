@@ -15,10 +15,16 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 set(SOURCES
     src/main.cpp
     src/MainWindow.cpp
+    src/HistoryTab.cpp
+    src/PredictTab.cpp
+    src/VerifyTab.cpp
 )
 
 set(HEADERS
     src/MainWindow.h
+    src/HistoryTab.h
+    src/PredictTab.h
+    src/VerifyTab.h
 )
 
 set(RESOURCES

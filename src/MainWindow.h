@@ -2,92 +2,22 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QTextEdit>
-#include <QCheckBox>
-#include <QProcess>
-#include <QProgressBar>
-#include <QLabel>
-#include <QGroupBox>
-#include <QTableWidget>
+#include "HistoryTab.h"
+#include "PredictTab.h"
+#include "VerifyTab.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
-
-private slots:
-    void selectOriginalFile();
-    void selectComparisonFile();
-    void runComparison();
-    void processOutput();
-    void processError();
-    void processFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
     void setupUI();
-    QString formatTime(const QString& time);
-    bool validateInputs();
-    bool isValidVideoFile(const QString& filePath);
-    QString getVideoResolution(const QString& filePath);
-    void addToHistory(const QString& type, const QString& details, const QString& result);
-    void loadHistory();
-
-    // UI Components
-    QLineEdit *originalFileEdit;
-    QLineEdit *comparisonFileEdit;
-    QPushButton *originalFileBtn;
-    QPushButton *comparisonFileBtn;
-    QLabel *originalResolutionLabel;
-    QLabel *comparisonResolutionLabel;
     
-    QCheckBox *useStartTimeCheckbox;
-    QLineEdit *startTimeEdit;
-    
-    QCheckBox *useDurationCheckbox;
-    QLineEdit *durationEdit;
-    
-    QPushButton *runBtn;
-    QProgressBar *progressBar;
-    
-    // Predict Tab Components
-    QProgressBar *predictProgressBar;
-    QGroupBox *predResultsGroup;
-    QLabel *predResultCRFLabel;
-    QLabel *predResultVMAFLabel;
-    QLabel *predResultSizeLabel;
-    QLabel *predResultTimeLabel;
-    QPushButton *predictRunBtn;
-    QPushButton *predictCancelBtn;
-    QTextEdit *predictOutput;
-    
-    // Results display
-    QGroupBox *resultsGroup;
-    QLabel *resultYLabel;
-    QLabel *resultULabel;
-    QLabel *resultVLabel;
-    QLabel *resultAllLabel;
-    
-    // PSNR results
-    QLabel *psnrYLabel;
-    QLabel *psnrULabel;
-    QLabel *psnrVLabel;
-    QLabel *psnrAvgLabel;
-    
-    // VMAF results
-    QLabel *vmafScoreLabel;
-    
-    QTextEdit *outputText;
-    
-    QProcess *ffmpegProcess;
-    QProcess *predictProcess;
-    double totalDuration;
-    double currentTime;
-    
-    QTableWidget *historyTable;
+    HistoryTab *historyTab;
+    PredictTab *predictTab;
+    VerifyTab *verifyTab;
 };
 
 #endif // MAINWINDOW_H
