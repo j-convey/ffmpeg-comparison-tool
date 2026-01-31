@@ -1,6 +1,10 @@
 #include "MainWindow.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QSpinBox>
 #include <QLabel>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -30,6 +34,73 @@ void MainWindow::setupUI() {
 
     QWidget *predictTab = new QWidget(this);
     QWidget *verifyTab = new QWidget(this);
+    
+    // --- Predict Tab Setup ---
+    QVBoxLayout *predictLayout = new QVBoxLayout(predictTab);
+
+    // File Selection
+    QGroupBox *predFileGroup = new QGroupBox("File Selection", predictTab);
+    QHBoxLayout *predFileLayout = new QHBoxLayout(predFileGroup);
+    QLineEdit *predFileEdit = new QLineEdit(predictTab);
+    predFileEdit->setPlaceholderText("Select video file...");
+    QPushButton *predBrowseBtn = new QPushButton("Browse...", predictTab);
+    predFileLayout->addWidget(new QLabel("Input Video:", predictTab));
+    predFileLayout->addWidget(predFileEdit);
+    predFileLayout->addWidget(predBrowseBtn);
+    predictLayout->addWidget(predFileGroup);
+
+    // Settings
+    QGroupBox *settingsGroup = new QGroupBox("ab-av1 Settings", predictTab);
+    QGridLayout *settingsLayout = new QGridLayout(settingsGroup);
+    
+    QLabel *encoderLabel = new QLabel("Encoder:", predictTab);
+    encoderLabel->setToolTip("Select the video codec. Software (lib*) is high quality but slow. Hardware (qsv/nvenc/amf) uses your GPU for speed.");
+    settingsLayout->addWidget(encoderLabel, 0, 0);
+    QComboBox *encoderCombo = new QComboBox(predictTab);
+    encoderCombo->addItems({
+        "libsvtav1", "libx265", "libx264", 
+        "av1_qsv", "hevc_qsv", "h264_qsv",
+        "av1_nvenc", "hevc_nvenc", "h264_nvenc",
+        "av1_amf", "hevc_amf", "h264_amf"
+    });
+    settingsLayout->addWidget(encoderCombo, 0, 1);
+
+    QLabel *presetLabel = new QLabel("Preset:", predictTab);
+    presetLabel->setToolTip("Efficiency vs Speed. Software: 'veryslow' to 'ultrafast'. Hardware: Numeric (e.g., 1-7, where 1 is slowest/best quality).");
+    settingsLayout->addWidget(presetLabel, 1, 0);
+    QLineEdit *presetEdit = new QLineEdit("8", predictTab);
+    presetEdit->setPlaceholderText("e.g., 8, medium, slow");
+    settingsLayout->addWidget(presetEdit, 1, 1);
+
+    QLabel *vmafLabel = new QLabel("Min VMAF:", predictTab);
+    vmafLabel->setToolTip("Target quality score (Netflix metric). 95 is standard for high quality. Higher values result in larger file sizes.");
+    settingsLayout->addWidget(vmafLabel, 2, 0);
+    QDoubleSpinBox *vmafSpin = new QDoubleSpinBox(predictTab);
+    vmafSpin->setRange(0.0, 100.0);
+    vmafSpin->setValue(95.0);
+    settingsLayout->addWidget(vmafSpin, 2, 1);
+
+    QLabel *samplesLabel = new QLabel("Samples:", predictTab);
+    samplesLabel->setToolTip("Number of video segments to analyze. More samples increase prediction accuracy but take longer to process.");
+    settingsLayout->addWidget(samplesLabel, 3, 0);
+    QSpinBox *samplesSpin = new QSpinBox(predictTab);
+    samplesSpin->setRange(1, 50);
+    samplesSpin->setValue(4);
+    settingsLayout->addWidget(samplesSpin, 3, 1);
+    predictLayout->addWidget(settingsGroup);
+
+    // Run Button
+    QPushButton *predictRunBtn = new QPushButton("Run CRF Search", predictTab);
+    predictRunBtn->setMinimumHeight(40);
+    predictLayout->addWidget(predictRunBtn);
+
+    // Output Log
+    QTextEdit *predictOutput = new QTextEdit(predictTab);
+    predictOutput->setReadOnly(true);
+    predictOutput->setFont(QFont("Courier New", 9));
+    predictLayout->addWidget(predictOutput);
+    
+    // --- Verify Tab Setup ---
 
     QVBoxLayout *mainLayout = new QVBoxLayout(verifyTab);
     
@@ -223,6 +294,70 @@ void MainWindow::setupUI() {
     connect(runBtn, &QPushButton::clicked, this, &MainWindow::runComparison);
     connect(useStartTimeCheckbox, &QCheckBox::toggled, startTimeEdit, &QLineEdit::setEnabled);
     connect(useDurationCheckbox, &QCheckBox::toggled, durationEdit, &QLineEdit::setEnabled);
+
+    // --- Predict Tab Logic (Lambdas) ---
+    connect(predBrowseBtn, &QPushButton::clicked, this, [this, predFileEdit]() {
+        QString fileName = QFileDialog::getOpenFileName(this, "Select Video", "", "Video Files (*.mp4 *.mkv *.mov *.webm *.avi)");
+        if (!fileName.isEmpty()) predFileEdit->setText(fileName);
+    });
+
+    connect(predictRunBtn, &QPushButton::clicked, this, [=]() {
+        QString inputFile = predFileEdit->text();
+        if (inputFile.isEmpty() || !QFileInfo::exists(inputFile)) {
+            QMessageBox::warning(this, "Error", "Please select a valid input file.");
+            return;
+        }
+
+        // UI State
+        predictRunBtn->setEnabled(false);
+        predictRunBtn->setText("Running ab-av1...");
+        predictOutput->clear();
+        predictOutput->append("Starting CRF search...");
+
+        // Create independent process for Predict tab
+        QProcess *proc = new QProcess(this);
+        
+        QStringList args;
+        args << "crf-search";
+        args << "-i" << inputFile;
+        args << "--encoder" << encoderCombo->currentText();
+        args << "--preset" << presetEdit->text();
+        args << "--min-vmaf" << QString::number(vmafSpin->value());
+        args << "--samples" << QString::number(samplesSpin->value());
+
+        predictOutput->append("Executing: ab-av1 " + args.join(" "));
+        predictOutput->append("--------------------------------------------------");
+
+        connect(proc, &QProcess::readyReadStandardOutput, this, [proc, predictOutput]() {
+            predictOutput->append(QString::fromLocal8Bit(proc->readAllStandardOutput()).trimmed());
+            predictOutput->verticalScrollBar()->setValue(predictOutput->verticalScrollBar()->maximum());
+        });
+
+        connect(proc, &QProcess::readyReadStandardError, this, [proc, predictOutput]() {
+            predictOutput->append(QString::fromLocal8Bit(proc->readAllStandardError()).trimmed());
+            predictOutput->verticalScrollBar()->setValue(predictOutput->verticalScrollBar()->maximum());
+        });
+
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), 
+                this, [=](int exitCode, QProcess::ExitStatus status) {
+            predictRunBtn->setEnabled(true);
+            predictRunBtn->setText("Run CRF Search");
+            if (status == QProcess::NormalExit && exitCode == 0) {
+                predictOutput->append("\nSUCCESS: CRF search completed.");
+            } else {
+                predictOutput->append("\nFAILED: Process exited with code " + QString::number(exitCode));
+            }
+            proc->deleteLater();
+        });
+
+        proc->start("ab-av1", args);
+        if (!proc->waitForStarted()) {
+            predictOutput->append("Error: Failed to start ab-av1. Ensure it is in your PATH.");
+            predictRunBtn->setEnabled(true);
+            predictRunBtn->setText("Run CRF Search");
+            proc->deleteLater();
+        }
+    });
 }
 
 void MainWindow::selectOriginalFile() {
