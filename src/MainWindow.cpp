@@ -8,6 +8,7 @@
 #include <QRegularExpression>
 #include <QScrollBar>
 #include <QFileInfo>
+#include <QTabWidget>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ffmpegProcess(nullptr) {
     setupUI();
@@ -24,8 +25,13 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::setupUI() {
-    QWidget *centralWidget = new QWidget(this);
-    QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
+    QTabWidget *tabWidget = new QTabWidget(this);
+    tabWidget->setTabPosition(QTabWidget::West);
+
+    QWidget *predictTab = new QWidget(this);
+    QWidget *verifyTab = new QWidget(this);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(verifyTab);
     
     // File Selection Group
     QGroupBox *fileGroup = new QGroupBox("File Selection", this);
@@ -207,7 +213,9 @@ void MainWindow::setupUI() {
     outputText->setMaximumHeight(200);  // Limit output height
     mainLayout->addWidget(outputText);
     
-    setCentralWidget(centralWidget);
+    tabWidget->addTab(predictTab, "Predict");
+    tabWidget->addTab(verifyTab, "Verify");
+    setCentralWidget(tabWidget);
     
     // Connect signals
     connect(originalFileBtn, &QPushButton::clicked, this, &MainWindow::selectOriginalFile);
