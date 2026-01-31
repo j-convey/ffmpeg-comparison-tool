@@ -10,6 +10,7 @@
 #include <QProgressBar>
 #include <QLabel>
 #include <QGroupBox>
+#include <QTableWidget>
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -32,6 +33,8 @@ private:
     bool validateInputs();
     bool isValidVideoFile(const QString& filePath);
     QString getVideoResolution(const QString& filePath);
+    void addToHistory(const QString& type, const QString& details, const QString& result);
+    void loadHistory();
 
     // UI Components
     QLineEdit *originalFileEdit;
@@ -49,6 +52,17 @@ private:
     
     QPushButton *runBtn;
     QProgressBar *progressBar;
+    
+    // Predict Tab Components
+    QProgressBar *predictProgressBar;
+    QGroupBox *predResultsGroup;
+    QLabel *predResultCRFLabel;
+    QLabel *predResultVMAFLabel;
+    QLabel *predResultSizeLabel;
+    QLabel *predResultTimeLabel;
+    QPushButton *predictRunBtn;
+    QPushButton *predictCancelBtn;
+    QTextEdit *predictOutput;
     
     // Results display
     QGroupBox *resultsGroup;
@@ -69,8 +83,11 @@ private:
     QTextEdit *outputText;
     
     QProcess *ffmpegProcess;
+    QProcess *predictProcess;
     double totalDuration;
     double currentTime;
+    
+    QTableWidget *historyTable;
 };
 
 #endif // MAINWINDOW_H
