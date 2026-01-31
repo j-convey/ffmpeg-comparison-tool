@@ -19,6 +19,13 @@ A GUI application for comprehensive video quality comparison using FFmpeg's SSIM
   - **PSNR (Peak Signal-to-Noise Ratio)**: Quality measurement in dB (higher is better)
   - **VMAF (Video Multimethod Assessment Fusion)**: Netflix's perceptual quality metric (0-100 scale)
 - **Color-Coded Results**: Visual quality indicators (green = excellent, yellow = good, orange = fair, red = poor)
+- **Smart CRF Prediction**:
+  - Uses `ab-av1` to automatically find the optimal CRF value for a target VMAF score
+  - Supports software (libsvtav1, libx265, etc.) and hardware encoders (QSV, NVENC, AMF)
+  - Estimates final file size and encoding time
+- **History Tracking**:
+  - Automatically saves all comparison and prediction results
+  - Exports data to CSV in your Documents folder for external analysis
 - **Detailed Output Log**: Complete FFmpeg output for debugging and verification
 - **Wide Format Support**: MP4, AVI, MKV, MOV, WMV, FLV, WebM, and more
 - **Professional UI**: Modern Qt6-based interface with organized layout
@@ -133,6 +140,7 @@ Compress-Archive -Path "build\bin\*" -DestinationPath "FFmpegComparisonTool-Rele
 
 The ZIP file contains:
 - FFmpegComparisonTool.exe
+- ab-av1.exe
 - All required Qt DLLs and plugins
 - MinGW runtime libraries
 
@@ -140,24 +148,43 @@ The ZIP file contains:
 
 ## Usage
 
-1. **Launch the application**
+The application is divided into three tabs: **Predict**, **Verify**, and **History**.
 
-2. **Select files:**
+### Verify Tab (Comparison)
+Compare two videos to analyze quality differences.
+
+1. **Select files:**
    - Click "Browse..." next to "Original Media" to select your reference video
    - Click "Browse..." next to "Comparison Media" to select the video to compare
    - The video resolution (e.g., 1920x1080) will automatically display next to each file
    - Only valid video formats will be accepted (MP4, AVI, MKV, MOV, WMV, FLV, WebM, etc.)
 
-3. **Configure time options (optional):**
+2. **Configure time options (optional):**
    - Check "Start Time" and enter a timestamp (HH:MM:SS) to begin comparison at a specific point
    - Check "Duration" and enter a duration (HH:MM:SS) to limit comparison length
    - Leave unchecked to compare from beginning to end
 
-4. **Run comparison:**
+3. **Run comparison:**
    - Click "Run Comparison" button
    - View real-time progress and output in the log area
    - Quality metrics (SSIM, PSNR, and VMAF) will be displayed with color-coded results
    - All three metrics provide complementary perspectives on video quality
+
+### Predict Tab (CRF Search)
+Determine the best encoding settings for a specific quality target using `ab-av1`.
+
+1. **Select Input Video**: Choose the source file you intend to encode.
+2. **Configure Settings**:
+   - **Encoder**: Select your desired codec. Supports Software (libsvtav1, libx265) and Hardware (Intel QSV, NVIDIA NVENC, AMD AMF).
+   - **Preset**: Set the encoding speed/efficiency balance (e.g., 8, medium, slow).
+   - **Min VMAF**: Set your target quality score (default 95).
+   - **Samples**: Number of video segments to analyze (more samples = higher accuracy but slower).
+3. **Run**: Click "Run CRF Search". The tool will calculate the optimal CRF value, predicted file size, and encoding time.
+
+### History Tab
+View a persistent log of all your activities.
+- Displays Date/Time, Operation Type, Details, and Results.
+- Automatically saves to `Documents/FFmpegComparisonTool_History.csv`.
 
 ## Understanding Quality Metrics
 

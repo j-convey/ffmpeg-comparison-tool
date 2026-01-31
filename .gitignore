@@ -39,3 +39,7 @@ Makefile
 .DS_Store
 Thumbs.db
 desktop.ini
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/tasks.json
+.vscode/settings.json

@@ -64,6 +64,16 @@ if(WIN32)
         )
     endif()
     
+    # Copy ab-av1.exe from the source root to the output bin directory
+    if(EXISTS "${CMAKE_SOURCE_DIR}/resources/ab-av1.exe")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/resources/ab-av1.exe"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+            COMMENT "Copying ab-av1.exe to build directory..."
+        )
+    endif()
+    
     # Copy MinGW runtime DLLs
     if(MINGW)
         get_filename_component(MINGW_BIN_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
