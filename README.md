@@ -133,6 +133,7 @@ Compress-Archive -Path "build\bin\*" -DestinationPath "FFmpegComparisonTool-Rele
 
 The ZIP file contains:
 - FFmpegComparisonTool.exe
+- ab-av1.exe
 - All required Qt DLLs and plugins
 - MinGW runtime libraries
 
