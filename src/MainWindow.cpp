@@ -3,7 +3,7 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setupUI();
-    setWindowTitle("FFmpeg Video Comparison Tool (SSIM + PSNR + VMAF)");
+    setWindowTitle("VidMetric - Video Comparison Tool (SSIM + PSNR + VMAF)");
     resize(950, 850);  // Larger window for additional metrics
 }
 

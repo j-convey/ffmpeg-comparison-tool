@@ -68,7 +68,7 @@ cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:/Qt/6.x.x/mingw_64"
 cmake --build .
 
 # Run the application
-./bin/FFmpegComparisonTool.exe
+./bin/VidMetric.exe
 ```
 
 ### Windows (Qt with Visual Studio)

@@ -1,4 +1,4 @@
-# PowerShell script to deploy all required DLLs for FFmpegComparisonTool
+# PowerShell script to deploy all required DLLs for VidMetric
 
 $BinDir = "build\bin"
 $QtBinDir = "C:\msys64\mingw64\bin"
@@ -55,4 +55,4 @@ Write-Host "Copied: $CopiedCount DLLs" -ForegroundColor Green
 if ($NotFoundCount -gt 0) {
     Write-Host "Not found: $NotFoundCount patterns" -ForegroundColor Yellow
 }
-Write-Host "`nYou can now run: .\build\bin\FFmpegComparisonTool.exe" -ForegroundColor Cyan
+Write-Host "`nYou can now run: .\build\bin\VidMetric.exe" -ForegroundColor Cyan
