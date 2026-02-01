@@ -1,4 +1,5 @@
 #include "PredictTab.h"
+#include "VideoUtils.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
@@ -145,7 +146,7 @@ void PredictTab::setupUI() {
 
     connect(predictRunBtn, &QPushButton::clicked, this, [this]() {
         QString inputFile = predFileEdit->text();
-        if (inputFile.isEmpty() || !QFileInfo::exists(inputFile)) {
+        if (inputFile.isEmpty() || !QFileInfo::exists(inputFile) || !VideoUtils::isValidVideoFile(inputFile)) {
             QMessageBox::warning(this, "Error", "Please select a valid input file.");
             return;
         }

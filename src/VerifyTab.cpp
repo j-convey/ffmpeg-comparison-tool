@@ -1,4 +1,5 @@
 #include "VerifyTab.h"
+#include "VideoUtils.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFileDialog>
@@ -218,7 +219,7 @@ void VerifyTab::selectOriginalFile() {
         "Video Files (*.mp4 *.avi *.mkv *.mov *.wmv *.flv);;All Files (*.*)");
     
     if (!fileName.isEmpty()) {
-        if (!isValidVideoFile(fileName)) {
+        if (!VideoUtils::isValidVideoFile(fileName)) {
             QMessageBox::warning(this, "Invalid File", 
                 "Please select a valid video file (MP4, AVI, MKV, MOV, WMV, or FLV).");
             return;
@@ -227,7 +228,7 @@ void VerifyTab::selectOriginalFile() {
         originalFileEdit->setText(fileName);
         
         // Get and display resolution
-        QString resolution = getVideoResolution(fileName);
+        QString resolution = VideoUtils::getVideoResolution(fileName);
         if (!resolution.isEmpty()) {
             originalResolutionLabel->setText(resolution);
         } else {
@@ -243,7 +244,7 @@ void VerifyTab::selectComparisonFile() {
         "Video Files (*.mp4 *.avi *.mkv *.mov *.wmv *.flv);;All Files (*.*)");
     
     if (!fileName.isEmpty()) {
-        if (!isValidVideoFile(fileName)) {
+        if (!VideoUtils::isValidVideoFile(fileName)) {
             QMessageBox::warning(this, "Invalid File", 
                 "Please select a valid video file (MP4, AVI, MKV, MOV, WMV, or FLV).");
             return;
@@ -252,7 +253,7 @@ void VerifyTab::selectComparisonFile() {
         comparisonFileEdit->setText(fileName);
         
         // Get and display resolution
-        QString resolution = getVideoResolution(fileName);
+        QString resolution = VideoUtils::getVideoResolution(fileName);
         if (!resolution.isEmpty()) {
             comparisonResolutionLabel->setText(resolution);
         } else {
@@ -551,45 +552,4 @@ void VerifyTab::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
     
     // Scroll to bottom
     outputText->verticalScrollBar()->setValue(outputText->verticalScrollBar()->maximum());
-}
-
-bool VerifyTab::isValidVideoFile(const QString& filePath) {
-    // Check file extension
-    QStringList validExtensions = {"mp4", "avi", "mkv", "mov", "wmv", "flv", "webm", "mpg", "mpeg", "m4v"};
-    QFileInfo fileInfo(filePath);
-    QString extension = fileInfo.suffix().toLower();
-    
-    return validExtensions.contains(extension);
-}
-
-QString VerifyTab::getVideoResolution(const QString& filePath) {
-    // Use ffprobe to get video resolution
-    QProcess process;
-    QStringList arguments;
-    
-    arguments << "-v" << "error"
-              << "-select_streams" << "v:0"
-              << "-show_entries" << "stream=width,height"
-              << "-of" << "csv=s=x:p=0"
-              << filePath;
-    
-    process.start("ffprobe", arguments);
-    
-    if (!process.waitForStarted(3000)) {
-        return "";
-    }
-    
-    if (!process.waitForFinished(5000)) {
-        process.kill();
-        return "";
-    }
-    
-    QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
-    
-    // Output should be in format "1920x1080"
-    if (!output.isEmpty() && output.contains("x")) {
-        return output;
-    }
-    
-    return "";
 }

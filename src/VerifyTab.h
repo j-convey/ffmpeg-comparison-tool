@@ -32,8 +32,6 @@ private slots:
 private:
     void setupUI();
     bool validateInputs();
-    bool isValidVideoFile(const QString& filePath);
-    QString getVideoResolution(const QString& filePath);
 
     QLineEdit *originalFileEdit;
     QLineEdit *comparisonFileEdit;

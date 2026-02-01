@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(FFmpegComparisonTool VERSION 1.0.0 LANGUAGES CXX)
+project(VidMetric VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,6 +18,7 @@ set(SOURCES
     src/HistoryTab.cpp
     src/PredictTab.cpp
     src/VerifyTab.cpp
+    src/VideoUtils.cpp
 )
 
 set(HEADERS
@@ -25,6 +26,7 @@ set(HEADERS
     src/HistoryTab.h
     src/PredictTab.h
     src/VerifyTab.h
+    src/VideoUtils.h
 )
 
 set(RESOURCES

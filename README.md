@@ -1,4 +1,4 @@
-# FFmpeg Video Comparison Tool
+# VidMetric
 
 A GUI application for comprehensive video quality comparison using FFmpeg's SSIM, PSNR, and VMAF metrics.
 
