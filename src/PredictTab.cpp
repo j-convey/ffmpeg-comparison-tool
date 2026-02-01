@@ -51,7 +51,12 @@ void PredictTab::setupUI() {
     settingsLayout->addWidget(encoderCombo, 0, 1);
 
     QLabel *presetLabel = new QLabel("Preset:", this);
-    presetLabel->setToolTip("Efficiency vs Speed. Software: 'veryslow' to 'ultrafast'. Hardware: Numeric (e.g., 1-7, where 1 is slowest/best quality).");
+    presetLabel->setToolTip("Efficiency vs Speed.\n\n"
+                            "Software: 'veryslow' to 'ultrafast'\n\n"
+                            "Intel QSV:\n"
+                            "1 = Quality (Slowest, best compression)\n"
+                            "4 = Balanced\n"
+                            "7 = Speed (Fastest)");
     settingsLayout->addWidget(presetLabel, 1, 0);
     presetEdit = new QLineEdit("8", this);
     presetEdit->setPlaceholderText("e.g., 8, medium, slow");
