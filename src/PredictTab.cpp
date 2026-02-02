@@ -222,7 +222,7 @@ void PredictTab::setupUI() {
                 else vmafStyle += "background-color: #f44336; color: white; }"; // Poor
                 
                 predResultVMAFLabel->setStyleSheet(vmafStyle);
-                predResultCRFLabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 5px; background-color: #e3f2fd; border-radius: 3px; }");
+                // predResultCRFLabel->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; padding: 5px; background-color: #4caf50; border-radius: 3px; }");
                 predResultsGroup->setVisible(true);
             }
         };
