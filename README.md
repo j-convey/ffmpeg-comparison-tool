@@ -150,8 +150,22 @@ The ZIP file contains:
 
 The application is divided into three tabs: **Predict**, **Verify**, and **History**.
 
+### Predict Tab (CRF Search)
+Determine the best encoding settings for a specific quality target using `ab-av1`.
+
+1. **Select Input Video**: Choose the source file you intend to encode.
+2. **Configure Settings**:
+   - **Encoder**: Select your desired codec. Supports Software (libsvtav1, libx265) and Hardware (Intel QSV, NVIDIA NVENC, AMD AMF).
+   - **Preset**: Set the encoding speed/efficiency balance (e.g., 8, medium, slow).
+   - **Min VMAF**: Set your target quality score (default 95).
+   - **Samples**: Number of video segments to analyze (more samples = higher accuracy but slower).
+3. **Run**: Click "Run CRF Search". The tool will calculate the optimal CRF value, predicted file size, and encoding time.
+
 ### Verify Tab (Comparison)
 Compare two videos to analyze quality differences.
+
+<img width="927" height="846" alt="2026-02-02_12-08-43" src="https://github.com/user-attachments/assets/6ef84e5c-a8c0-4e92-9534-0bf7f6e6cd56" />
+
 
 1. **Select files:**
    - Click "Browse..." next to "Original Media" to select your reference video
@@ -169,17 +183,6 @@ Compare two videos to analyze quality differences.
    - View real-time progress and output in the log area
    - Quality metrics (SSIM, PSNR, and VMAF) will be displayed with color-coded results
    - All three metrics provide complementary perspectives on video quality
-
-### Predict Tab (CRF Search)
-Determine the best encoding settings for a specific quality target using `ab-av1`.
-
-1. **Select Input Video**: Choose the source file you intend to encode.
-2. **Configure Settings**:
-   - **Encoder**: Select your desired codec. Supports Software (libsvtav1, libx265) and Hardware (Intel QSV, NVIDIA NVENC, AMD AMF).
-   - **Preset**: Set the encoding speed/efficiency balance (e.g., 8, medium, slow).
-   - **Min VMAF**: Set your target quality score (default 95).
-   - **Samples**: Number of video segments to analyze (more samples = higher accuracy but slower).
-3. **Run**: Click "Run CRF Search". The tool will calculate the optimal CRF value, predicted file size, and encoding time.
 
 ### History Tab
 View a persistent log of all your activities.
