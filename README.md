@@ -186,6 +186,9 @@ View a persistent log of all your activities.
 - Displays Date/Time, Operation Type, Details, and Results.
 - Automatically saves to `Documents/FFmpegComparisonTool_History.csv`.
 
+  <img width="913" height="378" alt="image" src="https://github.com/user-attachments/assets/9ea1862b-0cd5-4bac-acb0-8f727cfbd7c3" />
+
+
 ## Understanding Quality Metrics
 
 The application displays three complementary quality metrics in a color-coded visual format:
