@@ -1,34 +1,21 @@
 {
+    "version": "2.0.0",
     "tasks": [
         {
-            "label": "CMake: Configure",
+            "label": "CMake: Build with Preset",
             "type": "shell",
             "command": "cmake",
             "args": [
-                "-S", ".",
-                "-B", "build",
-                "-G", "MinGW Makefiles",
-                "-DCMAKE_PREFIX_PATH=C:/Qt/6.10.2/mingw_64",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-                "-DCMAKE_BUILD_TYPE=Debug"
-            ],
-            "group": "build",
-            "detail": "Configure the project using CMake"
-        },
-        {
-            "label": "CMake: Build",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build", "build"
+                "--build",
+                "--preset",
+                "debug"
             ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": "CMake: Configure",
-            "detail": "Build the project using CMake"
+            "problemMatcher": "$gcc",
+            "detail": "Builds the project using the 'debug' preset defined in CMakePresets.json"
         }
-    ],
-    "version": "2.0.0"
+    ]
 }

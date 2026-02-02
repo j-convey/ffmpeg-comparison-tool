@@ -1,0 +1,26 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "qt-6-10-mingw",
+      "displayName": "Qt 6.10.0 MinGW 64-bit",
+      "description": "Configuration for Qt 6.10.0 using MinGW",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "C:/Qt/6.10.0/mingw_64",
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "environment": {
+        "PATH": "C:/Qt/6.10.0/mingw_64/bin;"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "qt-6-10-mingw",
+      "configuration": "Debug"
+    }
+  ]
+}

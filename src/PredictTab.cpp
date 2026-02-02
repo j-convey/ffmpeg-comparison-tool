@@ -8,6 +8,11 @@
 #include <QRegularExpression>
 #include <QScrollBar>
 #include <QFileInfo>
+#include <QStandardPaths>
+#include <QTemporaryFile>
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
 
 PredictTab::PredictTab(QWidget *parent) : QWidget(parent), predictProcess(nullptr) {
     setupUI();
@@ -19,6 +24,24 @@ PredictTab::~PredictTab() {
         predictProcess->waitForFinished();
         delete predictProcess;
     }
+}
+
+QString PredictTab::getAbAv1Path() {
+    // Check if ab-av1.exe exists in the same folder as the app first
+    QString localPath = QCoreApplication::applicationDirPath() + "/ab-av1.exe";
+    if (QFile::exists(localPath)) return localPath;
+
+    // Otherwise, extract it from the embedded Qt Resources to a temp folder
+    QString tempPath = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("vidmetric_ab-av1.exe");
+    if (!QFile::exists(tempPath)) {
+        if (QFile::copy(":/resources/ab-av1.exe", tempPath)) {
+            QFile::setPermissions(tempPath, QFile::ExeUser | QFile::ReadUser | QFile::WriteUser);
+        } else {
+            // Fallback to PATH if resource extraction fails
+            return "ab-av1";
+        }
+    }
+    return tempPath;
 }
 
 void PredictTab::setupUI() {
@@ -259,7 +282,7 @@ void PredictTab::setupUI() {
             predictProcess = nullptr;
         });
 
-        proc->start("ab-av1", args);
+        proc->start(getAbAv1Path(), args);
         if (!proc->waitForStarted()) {
             predictOutput->append("Error: Failed to start ab-av1. Ensure it is in your PATH.");
             predictRunBtn->setEnabled(true);

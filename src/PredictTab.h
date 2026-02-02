@@ -25,6 +25,7 @@ signals:
 
 private:
     void setupUI();
+    QString getAbAv1Path();
 
     QLineEdit *predFileEdit;
     QComboBox *encoderCombo;
