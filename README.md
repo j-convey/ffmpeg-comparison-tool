@@ -2,7 +2,7 @@
 
 A GUI application for comprehensive video quality comparison using FFmpeg's SSIM, PSNR, and VMAF metrics.
 
-<img width="1655" height="1534" alt="image" src="https://github.com/user-attachments/assets/c27b8f81-1037-49bb-8710-6accc62905e4" />
+<img width="913" height="882" alt="image" src="https://github.com/user-attachments/assets/a04cdf2d-e70d-4944-89ac-d4a700818d97" />
 
 
 ## Features
