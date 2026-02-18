@@ -1,5 +1,10 @@
 {
     "cmake.configureOnOpen": true,
+    "cmake.configureArgs": [
+        "-DCMAKE_PREFIX_PATH=C:/Qt/6.10.2/mingw_64"
+    ],
+    "cmake.generator": "MinGW Makefiles",
+    "cmake.additionalKits": [],
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "files.associations": {
         "qmainwindow": "cpp",

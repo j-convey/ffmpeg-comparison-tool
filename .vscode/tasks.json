@@ -2,6 +2,29 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "CMake: Configure",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "build",
+                "-G",
+                "MinGW Makefiles",
+                "-DCMAKE_PREFIX_PATH=C:/Qt/6.10.2/mingw_64",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+                "-DCMAKE_BUILD_TYPE=Debug"
+            ],
+            "options": {
+                "env": {
+                    "PATH": "C:\\Qt\\Tools\\mingw1310_64\\bin;${env:PATH}"
+                }
+            },
+            "group": "build",
+            "detail": "Configure the project using CMake"
+        },
+        {
             "label": "CMake: Build with Preset",
             "type": "shell",
             "command": "cmake",
@@ -16,6 +39,11 @@
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
                 "-DCMAKE_BUILD_TYPE=Debug"
             ],
+            "options": {
+                "env": {
+                    "PATH": "C:\\Qt\\Tools\\mingw1310_64\\bin;${env:PATH}"
+                }
+            },
             "group": "build",
             "detail": "Configure the project using CMake"
         },
@@ -27,6 +55,11 @@
                 "--build",
                 "build"
             ],
+            "options": {
+                "env": {
+                    "PATH": "C:\\Qt\\Tools\\mingw1310_64\\bin;${env:PATH}"
+                }
+            },
             "group": {
                 "kind": "build",
                 "isDefault": false
