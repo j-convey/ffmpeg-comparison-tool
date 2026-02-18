@@ -2,7 +2,7 @@
 
 A GUI application for comprehensive video quality comparison using FFmpeg's SSIM, PSNR, and VMAF metrics.
 
-<img width="1655" height="1534" alt="image" src="https://github.com/user-attachments/assets/c27b8f81-1037-49bb-8710-6accc62905e4" />
+<img width="913" height="882" alt="image" src="https://github.com/user-attachments/assets/a04cdf2d-e70d-4944-89ac-d4a700818d97" />
 
 
 ## Features
@@ -150,8 +150,22 @@ The ZIP file contains:
 
 The application is divided into three tabs: **Predict**, **Verify**, and **History**.
 
+### Predict Tab (CRF Search)
+Determine the best encoding settings for a specific quality target using `ab-av1`.
+
+1. **Select Input Video**: Choose the source file you intend to encode.
+2. **Configure Settings**:
+   - **Encoder**: Select your desired codec. Supports Software (libsvtav1, libx265) and Hardware (Intel QSV, NVIDIA NVENC, AMD AMF).
+   - **Preset**: Set the encoding speed/efficiency balance (e.g., 8, medium, slow).
+   - **Min VMAF**: Set your target quality score (default 95).
+   - **Samples**: Number of video segments to analyze (more samples = higher accuracy but slower).
+3. **Run**: Click "Run CRF Search". The tool will calculate the optimal CRF value, predicted file size, and encoding time.
+
 ### Verify Tab (Comparison)
 Compare two videos to analyze quality differences.
+
+<img width="927" height="846" alt="2026-02-02_12-08-43" src="https://github.com/user-attachments/assets/6ef84e5c-a8c0-4e92-9534-0bf7f6e6cd56" />
+
 
 1. **Select files:**
    - Click "Browse..." next to "Original Media" to select your reference video
@@ -170,21 +184,13 @@ Compare two videos to analyze quality differences.
    - Quality metrics (SSIM, PSNR, and VMAF) will be displayed with color-coded results
    - All three metrics provide complementary perspectives on video quality
 
-### Predict Tab (CRF Search)
-Determine the best encoding settings for a specific quality target using `ab-av1`.
-
-1. **Select Input Video**: Choose the source file you intend to encode.
-2. **Configure Settings**:
-   - **Encoder**: Select your desired codec. Supports Software (libsvtav1, libx265) and Hardware (Intel QSV, NVIDIA NVENC, AMD AMF).
-   - **Preset**: Set the encoding speed/efficiency balance (e.g., 8, medium, slow).
-   - **Min VMAF**: Set your target quality score (default 95).
-   - **Samples**: Number of video segments to analyze (more samples = higher accuracy but slower).
-3. **Run**: Click "Run CRF Search". The tool will calculate the optimal CRF value, predicted file size, and encoding time.
-
 ### History Tab
 View a persistent log of all your activities.
 - Displays Date/Time, Operation Type, Details, and Results.
 - Automatically saves to `Documents/FFmpegComparisonTool_History.csv`.
+
+  <img width="913" height="378" alt="image" src="https://github.com/user-attachments/assets/9ea1862b-0cd5-4bac-acb0-8f727cfbd7c3" />
+
 
 ## Understanding Quality Metrics
 

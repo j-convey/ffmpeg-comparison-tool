@@ -7,6 +7,11 @@
 #include <QMessageBox>
 #include <QScrollBar>
 #include <QFileInfo>
+#include <QStandardPaths>
+#include <QTemporaryFile>
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
 
 PredictTab::PredictTab(QWidget *parent) : QWidget(parent) {
     predictJob = new AbAv1Job(this);
