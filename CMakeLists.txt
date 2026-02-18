@@ -19,6 +19,8 @@ set(SOURCES
     src/PredictTab.cpp
     src/VerifyTab.cpp
     src/VideoUtils.cpp
+    src/AbAv1Job.cpp
+    src/FfmpegJob.cpp
 )
 
 set(HEADERS
@@ -27,6 +29,8 @@ set(HEADERS
     src/PredictTab.h
     src/VerifyTab.h
     src/VideoUtils.h
+    src/AbAv1Job.h
+    src/FfmpegJob.h
 )
 
 set(RESOURCES

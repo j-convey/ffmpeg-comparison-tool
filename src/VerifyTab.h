@@ -9,14 +9,13 @@
 #include <QProgressBar>
 #include <QGroupBox>
 #include <QTextEdit>
-#include <QProcess>
+#include "FfmpegJob.h"
 
 class VerifyTab : public QWidget {
     Q_OBJECT
 
 public:
     explicit VerifyTab(QWidget *parent = nullptr);
-    ~VerifyTab();
 
 signals:
     void comparisonCompleted(const QString& type, const QString& details, const QString& result);
@@ -25,9 +24,6 @@ private slots:
     void selectOriginalFile();
     void selectComparisonFile();
     void runComparison();
-    void processOutput();
-    void processError();
-    void processFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
     void setupUI();
@@ -55,9 +51,7 @@ private:
     QLabel *vmafScoreLabel;
     
     QTextEdit *outputText;
-    QProcess *ffmpegProcess;
-    double totalDuration;
-    double currentTime;
+    FfmpegJob *ffmpegJob;
 };
 
 #endif // VERIFYTAB_H

@@ -9,16 +9,102 @@
 #include <QFileInfo>
 #include <QTime>
 
-VerifyTab::VerifyTab(QWidget *parent) : QWidget(parent), ffmpegProcess(nullptr), totalDuration(0), currentTime(0) {
+VerifyTab::VerifyTab(QWidget *parent) : QWidget(parent) {
+    ffmpegJob = new FfmpegJob(this);
     setupUI();
-}
 
-VerifyTab::~VerifyTab() {
-    if (ffmpegProcess) {
-        ffmpegProcess->kill();
-        ffmpegProcess->waitForFinished();
-        delete ffmpegProcess;
-    }
+    // Log lines → output widget
+    connect(ffmpegJob, &FfmpegJob::logLine, this, [this](const QString& line) {
+        outputText->append(line);
+        outputText->verticalScrollBar()->setValue(outputText->verticalScrollBar()->maximum());
+    });
+
+    // Progress → progress bar
+    connect(ffmpegJob, &FfmpegJob::progressUpdated, this, [this](double current, double total) {
+        int pct = qMin(100, static_cast<int>((current / total) * 100.0));
+        progressBar->setValue(pct);
+        progressBar->setFormat(QString("%1% - %2 / %3")
+            .arg(pct)
+            .arg(QTime(0,0,0).addSecs(static_cast<int>(current)).toString("HH:mm:ss"))
+            .arg(QTime(0,0,0).addSecs(static_cast<int>(total)).toString("HH:mm:ss")));
+    });
+
+    // SSIM result → update labels with color coding
+    connect(ffmpegJob, &FfmpegJob::ssimResult, this, [this](const SsimResult& r) {
+        auto style = [](double s) {
+            QString b = "QLabel { font-size: 12pt; font-weight: bold; padding: 8px; border-radius: 5px; ";
+            if (s >= 0.99) return b + "background-color: #4caf50; color: white; }";
+            if (s >= 0.95) return b + "background-color: #8bc34a; color: white; }";
+            if (s >= 0.90) return b + "background-color: #ffeb3b; color: black; }";
+            if (s >= 0.80) return b + "background-color: #ff9800; color: white; }";
+            return b + "background-color: #f44336; color: white; }";
+        };
+        auto fmt = [](double v, const QString& db) {
+            return QString("%1\n(%2)").arg(v, 0, 'f', 4).arg(db == "inf" ? "∞ dB" : db + " dB");
+        };
+        resultYLabel  ->setText("Y: "       + fmt(r.y,   r.yDb));   resultYLabel  ->setStyleSheet(style(r.y));
+        resultULabel  ->setText("U: "       + fmt(r.u,   r.uDb));   resultULabel  ->setStyleSheet(style(r.u));
+        resultVLabel  ->setText("V: "       + fmt(r.v,   r.vDb));   resultVLabel  ->setStyleSheet(style(r.v));
+        resultAllLabel->setText("Overall: " + fmt(r.all, r.allDb)); resultAllLabel->setStyleSheet(style(r.all));
+        resultsGroup->setVisible(true);
+    });
+
+    // PSNR result → update labels with color coding
+    connect(ffmpegJob, &FfmpegJob::psnrResult, this, [this](const PsnrResult& r) {
+        auto style = [](const QString& db) {
+            if (db == "inf") return QString(
+                "QLabel { font-size: 12pt; font-weight: bold; padding: 8px; "
+                "border-radius: 5px; background-color: #4caf50; color: white; }");
+            QString b = "QLabel { font-size: 12pt; font-weight: bold; padding: 8px; border-radius: 5px; ";
+            double v = db.toDouble();
+            if (v >= 40.0) return b + "background-color: #4caf50; color: white; }";
+            if (v >= 35.0) return b + "background-color: #8bc34a; color: white; }";
+            if (v >= 30.0) return b + "background-color: #ffeb3b; color: black; }";
+            if (v >= 25.0) return b + "background-color: #ff9800; color: white; }";
+            return b + "background-color: #f44336; color: white; }";
+        };
+        auto fmt = [](const QString& db) { return db == "inf" ? QString("∞") : db; };
+        psnrYLabel  ->setText(QString("Y: %1 dB")  .arg(fmt(r.yDb)));  psnrYLabel  ->setStyleSheet(style(r.yDb));
+        psnrULabel  ->setText(QString("U: %1 dB")  .arg(fmt(r.uDb)));  psnrULabel  ->setStyleSheet(style(r.uDb));
+        psnrVLabel  ->setText(QString("V: %1 dB")  .arg(fmt(r.vDb)));  psnrVLabel  ->setStyleSheet(style(r.vDb));
+        psnrAvgLabel->setText(QString("Avg: %1 dB").arg(fmt(r.avgDb))); psnrAvgLabel->setStyleSheet(style(r.avgDb));
+        resultsGroup->setVisible(true);
+    });
+
+    // VMAF result → update label with color coding
+    connect(ffmpegJob, &FfmpegJob::vmafResult, this, [this](double score) {
+        QString style = "QLabel { font-size: 14pt; font-weight: bold; padding: 12px; border-radius: 5px; ";
+        if      (score >= 95.0) style += "background-color: #4caf50; color: white; }";
+        else if (score >= 85.0) style += "background-color: #8bc34a; color: white; }";
+        else if (score >= 75.0) style += "background-color: #ffeb3b; color: black; }";
+        else if (score >= 60.0) style += "background-color: #ff9800; color: white; }";
+        else                    style += "background-color: #f44336; color: white; }";
+        vmafScoreLabel->setText(QString("VMAF: %1").arg(score, 0, 'f', 2));
+        vmafScoreLabel->setStyleSheet(style);
+        resultsGroup->setVisible(true);
+    });
+
+    // Finished → restore UI and emit history signal
+    connect(ffmpegJob, &FfmpegJob::finished, this, [this](bool success, int exitCode) {
+        runBtn->setEnabled(true);
+        runBtn->setText("Run Comparison");
+        progressBar->setVisible(false);
+        outputText->append("\n" + QString("-").repeated(80));
+        if (success) {
+            outputText->append("\nComparison completed successfully!");
+            QString details = QFileInfo(originalFileEdit->text()).fileName() + " vs " +
+                              QFileInfo(comparisonFileEdit->text()).fileName();
+            QStringList results;
+            if (resultAllLabel->text() != "Overall: --")
+                results << "SSIM: " + resultAllLabel->text().replace("\n", " ");
+            if (psnrAvgLabel->text() != "Average: --") results << "PSNR: " + psnrAvgLabel->text();
+            if (vmafScoreLabel->text() != "VMAF Score: --") results << vmafScoreLabel->text();
+            emit comparisonCompleted("Comparison", details, results.join(" | "));
+        } else {
+            outputText->append(QString("\nFFmpeg exited with code: %1").arg(exitCode));
+        }
+        outputText->verticalScrollBar()->setValue(outputText->verticalScrollBar()->maximum());
+    });
 }
 
 void VerifyTab::setupUI() {
@@ -296,260 +382,19 @@ bool VerifyTab::validateInputs() {
 }
 
 void VerifyTab::runComparison() {
-    if (!validateInputs()) {
-        return;
-    }
-    
-    // Build FFmpeg command
-    QStringList arguments;
-    
-    // Add start time and duration for first input if specified
-    if (useStartTimeCheckbox->isChecked()) {
-        arguments << "-ss" << startTimeEdit->text();
-    }
-    if (useDurationCheckbox->isChecked()) {
-        arguments << "-t" << durationEdit->text();
-    }
-    
-    // First input file
-    arguments << "-i" << originalFileEdit->text();
-    
-    // Add start time and duration for second input if specified
-    if (useStartTimeCheckbox->isChecked()) {
-        arguments << "-ss" << startTimeEdit->text();
-    }
-    if (useDurationCheckbox->isChecked()) {
-        arguments << "-t" << durationEdit->text();
-    }
-    
-    // Second input file
-    arguments << "-i" << comparisonFileEdit->text();
-    
-    // Complex filter with SSIM, PSNR, and VMAF
-    QString filterComplex = "[0:v]split=3[ref1][ref2][ref3];[1:v]split=3[main1][main2][main3];"
-                            "[main1][ref1]ssim[stats_ssim];"
-                            "[main2][ref2]psnr[stats_psnr];"
-                            "[main3][ref3]libvmaf";
-    
-    arguments << "-filter_complex" << filterComplex
-              << "-map" << "[stats_ssim]"
-              << "-map" << "[stats_psnr]"
-              << "-f" << "null" << "-";
-    
-    // Display command
+    if (!validateInputs()) return;
+
     outputText->clear();
-    outputText->append("Running command:");
-    outputText->append("ffmpeg " + arguments.join(" "));
-    outputText->append("\n" + QString("-").repeated(80) + "\n");
-    
-    // Create and configure process
-    if (ffmpegProcess) {
-        delete ffmpegProcess;
-    }
-    
-    ffmpegProcess = new QProcess(this);
-    connect(ffmpegProcess, &QProcess::readyReadStandardOutput, this, &VerifyTab::processOutput);
-    connect(ffmpegProcess, &QProcess::readyReadStandardError, this, &VerifyTab::processError);
-    connect(ffmpegProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, &VerifyTab::processFinished);
-    
-    // Disable run button while processing
     runBtn->setEnabled(false);
     runBtn->setText("Running...");
-    
-    // Initialize progress tracking
-    totalDuration = 0.0;
-    currentTime = 0.0;
     progressBar->setValue(0);
     progressBar->setVisible(true);
     resultsGroup->setVisible(false);
-    
-    // Start FFmpeg
-    ffmpegProcess->start("ffmpeg", arguments);
-    
-    if (!ffmpegProcess->waitForStarted()) {
-        QMessageBox::critical(this, "Error", 
-            "Failed to start FFmpeg. Please ensure FFmpeg is installed and in your PATH.");
-        runBtn->setEnabled(true);
-        runBtn->setText("Run Comparison");
-    }
-}
 
-void VerifyTab::processOutput() {
-    if (ffmpegProcess) {
-        QString output = QString::fromLocal8Bit(ffmpegProcess->readAllStandardOutput());
-        outputText->append(output);
-    }
-}
-
-void VerifyTab::processError() {
-    if (ffmpegProcess) {
-        QString error = QString::fromLocal8Bit(ffmpegProcess->readAllStandardError());
-        outputText->append(error);
-        
-        // Parse duration from input file info if not set
-        if (totalDuration == 0.0 && !useDurationCheckbox->isChecked()) {
-            QRegularExpression durationRegex("Duration: (\\d{2}):(\\d{2}):(\\d{2})\\.(\\d{2})");
-            QRegularExpressionMatch match = durationRegex.match(error);
-            if (match.hasMatch()) {
-                int hours = match.captured(1).toInt();
-                int minutes = match.captured(2).toInt();
-                int seconds = match.captured(3).toInt();
-                totalDuration = hours * 3600.0 + minutes * 60.0 + seconds;
-            }
-        }
-        
-        // If duration was specified, use that
-        if (totalDuration == 0.0 && useDurationCheckbox->isChecked()) {
-            QStringList parts = durationEdit->text().split(":");
-            if (parts.size() == 3) {
-                totalDuration = parts[0].toInt() * 3600.0 + parts[1].toInt() * 60.0 + parts[2].toInt();
-            }
-        }
-        
-        // Parse progress from frame lines
-        QRegularExpression progressRegex("time=(\\d{2}):(\\d{2}):(\\d{2})\\.(\\d{2})");
-        QRegularExpressionMatch progressMatch = progressRegex.match(error);
-        if (progressMatch.hasMatch() && totalDuration > 0.0) {
-            int hours = progressMatch.captured(1).toInt();
-            int minutes = progressMatch.captured(2).toInt();
-            int seconds = progressMatch.captured(3).toInt();
-            currentTime = hours * 3600.0 + minutes * 60.0 + seconds;
-            
-            int percentage = qMin(100, static_cast<int>((currentTime / totalDuration) * 100.0));
-            progressBar->setValue(percentage);
-            progressBar->setFormat(QString("%1% - %2 / %3")
-                .arg(percentage)
-                .arg(QTime(0, 0, 0).addSecs(static_cast<int>(currentTime)).toString("HH:mm:ss"))
-                .arg(QTime(0, 0, 0).addSecs(static_cast<int>(totalDuration)).toString("HH:mm:ss")));
-        }
-        
-        // Parse SSIM results
-        QRegularExpression ssimRegex("SSIM Y:([\\d.]+) \\(([\\d.]+|inf)\\) U:([\\d.]+) \\(([\\d.]+|inf)\\) V:([\\d.]+) \\(([\\d.]+|inf)\\) All:([\\d.]+) \\(([\\d.]+|inf)\\)");
-        QRegularExpressionMatch ssimMatch = ssimRegex.match(error);
-        if (ssimMatch.hasMatch()) {
-            double yScore = ssimMatch.captured(1).toDouble();
-            QString yDbStr = ssimMatch.captured(2);
-            double uScore = ssimMatch.captured(3).toDouble();
-            QString uDbStr = ssimMatch.captured(4);
-            double vScore = ssimMatch.captured(5).toDouble();
-            QString vDbStr = ssimMatch.captured(6);
-            double allScore = ssimMatch.captured(7).toDouble();
-            QString allDbStr = ssimMatch.captured(8);
-            
-            // Update result labels with color coding
-            auto getSSIMColorStyle = [](double score) {
-                QString baseStyle = "QLabel { font-size: 12pt; font-weight: bold; padding: 8px; border-radius: 5px; ";
-                if (score >= 0.99) return baseStyle + "background-color: #4caf50; color: white; }"; // Excellent - green
-                if (score >= 0.95) return baseStyle + "background-color: #8bc34a; color: white; }"; // Very good - light green
-                if (score >= 0.90) return baseStyle + "background-color: #ffeb3b; color: black; }"; // Good - yellow
-                if (score >= 0.80) return baseStyle + "background-color: #ff9800; color: white; }"; // Fair - orange
-                return baseStyle + "background-color: #f44336; color: white; }"; // Poor - red
-            };
-            
-            resultYLabel->setText(QString("Y: %1\n(%2)").arg(yScore, 0, 'f', 4).arg(yDbStr == "inf" ? "∞ dB" : yDbStr + " dB"));
-            resultYLabel->setStyleSheet(getSSIMColorStyle(yScore));
-            
-            resultULabel->setText(QString("U: %1\n(%2)").arg(uScore, 0, 'f', 4).arg(uDbStr == "inf" ? "∞ dB" : uDbStr + " dB"));
-            resultULabel->setStyleSheet(getSSIMColorStyle(uScore));
-            
-            resultVLabel->setText(QString("V: %1\n(%2)").arg(vScore, 0, 'f', 4).arg(vDbStr == "inf" ? "∞ dB" : vDbStr + " dB"));
-            resultVLabel->setStyleSheet(getSSIMColorStyle(vScore));
-            
-            resultAllLabel->setText(QString("Overall: %1\n(%2)").arg(allScore, 0, 'f', 4).arg(allDbStr == "inf" ? "∞ dB" : allDbStr + " dB"));
-            resultAllLabel->setStyleSheet(getSSIMColorStyle(allScore));
-            
-            resultsGroup->setVisible(true);
-        }
-        
-        // Parse PSNR results
-        QRegularExpression psnrRegex("PSNR.*?y:([\\d.]+|inf).*?u:([\\d.]+|inf).*?v:([\\d.]+|inf).*?average:([\\d.]+|inf)");
-        QRegularExpressionMatch psnrMatch = psnrRegex.match(error);
-        if (psnrMatch.hasMatch()) {
-            QString yDb = psnrMatch.captured(1);
-            QString uDb = psnrMatch.captured(2);
-            QString vDb = psnrMatch.captured(3);
-            QString avgDb = psnrMatch.captured(4);
-            
-            // Update PSNR labels with color coding
-            auto getPSNRColorStyle = [](const QString& dbStr) {
-                if (dbStr == "inf") {
-                    return QString("QLabel { font-size: 12pt; font-weight: bold; padding: 8px; border-radius: 5px; background-color: #4caf50; color: white; }");
-                }
-                double db = dbStr.toDouble();
-                QString baseStyle = "QLabel { font-size: 12pt; font-weight: bold; padding: 8px; border-radius: 5px; ";
-                if (db >= 40.0) return baseStyle + "background-color: #4caf50; color: white; }"; // Excellent
-                if (db >= 35.0) return baseStyle + "background-color: #8bc34a; color: white; }"; // Very good
-                if (db >= 30.0) return baseStyle + "background-color: #ffeb3b; color: black; }"; // Good
-                if (db >= 25.0) return baseStyle + "background-color: #ff9800; color: white; }"; // Fair
-                return baseStyle + "background-color: #f44336; color: white; }"; // Poor
-            };
-            
-            psnrYLabel->setText(QString("Y: %1 dB").arg(yDb == "inf" ? "∞" : yDb));
-            psnrYLabel->setStyleSheet(getPSNRColorStyle(yDb));
-            
-            psnrULabel->setText(QString("U: %1 dB").arg(uDb == "inf" ? "∞" : uDb));
-            psnrULabel->setStyleSheet(getPSNRColorStyle(uDb));
-            
-            psnrVLabel->setText(QString("V: %1 dB").arg(vDb == "inf" ? "∞" : vDb));
-            psnrVLabel->setStyleSheet(getPSNRColorStyle(vDb));
-            
-            psnrAvgLabel->setText(QString("Avg: %1 dB").arg(avgDb == "inf" ? "∞" : avgDb));
-            psnrAvgLabel->setStyleSheet(getPSNRColorStyle(avgDb));
-            
-            resultsGroup->setVisible(true);
-        }
-        
-        // Parse VMAF results
-        QRegularExpression vmafRegex("VMAF score[:\\s=]+([\\d.]+)");
-        QRegularExpressionMatch vmafMatch = vmafRegex.match(error);
-        if (vmafMatch.hasMatch()) {
-            double vmafScore = vmafMatch.captured(1).toDouble();
-            
-            // Update VMAF label with color coding
-            QString vmafStyle = "QLabel { font-size: 14pt; font-weight: bold; padding: 12px; border-radius: 5px; ";
-            if (vmafScore >= 95.0) vmafStyle += "background-color: #4caf50; color: white; }"; // Excellent
-            else if (vmafScore >= 85.0) vmafStyle += "background-color: #8bc34a; color: white; }"; // Very good
-            else if (vmafScore >= 75.0) vmafStyle += "background-color: #ffeb3b; color: black; }"; // Good
-            else if (vmafScore >= 60.0) vmafStyle += "background-color: #ff9800; color: white; }"; // Fair
-            else vmafStyle += "background-color: #f44336; color: white; }"; // Poor
-            
-            vmafScoreLabel->setText(QString("VMAF: %1").arg(vmafScore, 0, 'f', 2));
-            vmafScoreLabel->setStyleSheet(vmafStyle);
-            
-            resultsGroup->setVisible(true);
-        }
-    }
-}
-
-void VerifyTab::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
-    runBtn->setEnabled(true);
-    runBtn->setText("Run Comparison");
-    progressBar->setVisible(false);
-    
-    outputText->append("\n" + QString("-").repeated(80));
-    
-    if (exitStatus == QProcess::NormalExit) {
-        if (exitCode == 0) {
-            outputText->append("\nComparison completed successfully!");
-            
-            // Add to history
-            QString details = QFileInfo(originalFileEdit->text()).fileName() + " vs " + 
-                              QFileInfo(comparisonFileEdit->text()).fileName();
-            
-            QStringList results;
-            if (resultAllLabel->text() != "Overall: --") results << "SSIM: " + resultAllLabel->text().replace("\n", " ");
-            if (psnrAvgLabel->text() != "Average: --") results << "PSNR: " + psnrAvgLabel->text();
-            if (vmafScoreLabel->text() != "VMAF Score: --") results << vmafScoreLabel->text();
-            
-            emit comparisonCompleted("Comparison", details, results.join(" | "));
-        } else {
-            outputText->append(QString("\nFFmpeg exited with code: %1").arg(exitCode));
-        }
-    } else {
-        outputText->append("\nFFmpeg process crashed or was terminated.");
-    }
-    
-    // Scroll to bottom
-    outputText->verticalScrollBar()->setValue(outputText->verticalScrollBar()->maximum());
+    ffmpegJob->start(
+        originalFileEdit->text(),
+        comparisonFileEdit->text(),
+        useStartTimeCheckbox->isChecked() ? startTimeEdit->text() : QString(),
+        useDurationCheckbox ->isChecked() ? durationEdit ->text() : QString()
+    );
 }
